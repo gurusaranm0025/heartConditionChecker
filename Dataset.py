@@ -2,7 +2,7 @@ import pandas as pd
 import joblib
 import os
 script_dir = os.path.dirname(__file__)
-from config import CAT_COLS, NUM_COLS, DATASET_PATH_FOR_LINUX, DATASET_PATH_FOR_WINDOWS, TARGET_CLASS, BUILDS_FOLDER_NAME, FEATURES_ORDER_ON_FIT_FILE
+from config import CAT_COLS, NUM_COLS, DATASET_NAME, DATASET_MAIN_FOLDER, DATASET_SUB_FOLDER, TARGET_CLASS, BUILDS_FOLDER_NAME, FEATURES_ORDER_ON_FIT_FILE, ENCODERS_FILE_NAME, SCALERS_FILE_NAME
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from typing import Dict
@@ -10,7 +10,7 @@ from typing import Dict
 class Preprocessing:
     def __init__(self, dataset_path: str, save_encoders: bool = False) -> None:
         assert len(dataset_path) > 0, "Need the dataset path to get things going."
-        self.DATASET_PATH: str = f"{script_dir}/{dataset_path}"
+        self.DATASET_PATH: str = dataset_path
         self.loaded_dataset: pd.DataFrame = pd.read_csv(self.DATASET_PATH)
         self.cat_cols: list = CAT_COLS
         self.num_cols: list = NUM_COLS
@@ -42,11 +42,11 @@ class Preprocessing:
         return pd.concat([self.encoded_cat_features, self.encoded_num_features], axis=1)
     
     def save_encoders(self) -> None:
-        file_path = script_dir + "/builds/LabelEncoders.pkl"
+        file_path = os.path.join(script_dir,BUILDS_FOLDER_NAME,ENCODERS_FILE_NAME)
         joblib.dump(self.label_encoders, file_path)
     
     def save_scalers(self) -> None:
-        file_path = script_dir + "/builds/StandardScalers.pkl"
+        file_path = os.path.join(script_dir,BUILDS_FOLDER_NAME,SCALERS_FILE_NAME)
         joblib.dump(self.standard_scalers, file_path)
 
 class TrainTestDataset(Preprocessing):
@@ -60,7 +60,8 @@ class TrainTestDataset(Preprocessing):
 
         def features_order_on_fit(self) -> None:
             order_list: list = [col for col in self.X.columns]
-            path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{FEATURES_ORDER_ON_FIT_FILE}"
+            path = os.path.join(script_dir, BUILDS_FOLDER_NAME, FEATURES_ORDER_ON_FIT_FILE)
+            # path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{FEATURES_ORDER_ON_FIT_FILE}"
             joblib.dump(order_list, path)
         
         def get_train_test_shape(self) -> None:
@@ -86,6 +87,6 @@ class TrainTestDataset(Preprocessing):
                         
              
 if __name__ == "__main__":
-    sample = Preprocessing(dataset_path=DATASET_PATH_FOR_LINUX)
+    sample = Preprocessing(dataset_path=os.path.join(script_dir,DATASET_MAIN_FOLDER,DATASET_SUB_FOLDER,DATASET_NAME))
     print(sample.loaded_dataset)
     print(sample.cat_cols)

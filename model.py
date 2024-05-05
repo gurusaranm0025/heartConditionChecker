@@ -4,21 +4,22 @@ import os
 script_dir = os.path.dirname(__file__)
 import joblib
 
-from config import BUILDS_FOLDER_NAME, ENCODERS_FILE_NAME, SCALERS_FILE_NAME, SKLEARN_MODELS_FILE_NAMES, KERAS_MODELS_FILE_NAMES, DATASET_PATH_FOR_LINUX, CAT_COLS, NUM_COLS, TARGET_CLASS
+from config import BUILDS_FOLDER_NAME, ENCODERS_FILE_NAME, SCALERS_FILE_NAME, SKLEARN_MODELS_FILE_NAMES, KERAS_MODELS_FILE_NAMES, DATASET_NAME, DATASET_MAIN_FOLDER, DATASET_SUB_FOLDER, CAT_COLS, NUM_COLS, TARGET_CLASS
 from input_type import Input
 from Dataset import TrainTestDataset
-from typing import Dict, Union
+from typing import Dict
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from collections import Counter
 
-dataset = TrainTestDataset(dataset_path=DATASET_PATH_FOR_LINUX, test_size=0.2)
+dataset = TrainTestDataset(dataset_path=os.path.join(script_dir,DATASET_MAIN_FOLDER,DATASET_SUB_FOLDER,DATASET_NAME), test_size=0.2)
 
 class Model:
     def __init__(self, file_name: str, dataset: TrainTestDataset):
         self.filename: str = file_name
         self.name: str = file_name.removesuffix('.pkl')
         print(f"Loading {self.name} mdoel")
-        self.path: str = f"{script_dir}/{BUILDS_FOLDER_NAME}/{file_name}"
+        self.path: str = os.path.join(script_dir, BUILDS_FOLDER_NAME, file_name)
+        # self.path: str = f"{script_dir}/{BUILDS_FOLDER_NAME}/{file_name}"
         self.model= joblib.load(self.path)
         self.encoders: Dict[str,LabelEncoder] = None
         self.scalers: Dict[str,StandardScaler] = None
@@ -33,11 +34,13 @@ class Model:
         self.sampleX = df
     
     def __load_encoders(self) -> None:
-        path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{ENCODERS_FILE_NAME}"
+        path = os.path.join(script_dir,BUILDS_FOLDER_NAME,ENCODERS_FILE_NAME)
+        # path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{ENCODERS_FILE_NAME}"
         self.encoders = joblib.load(path)
     
     def __load_scalers(self) -> None:
-        path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{SCALERS_FILE_NAME}"
+        path = os.path.join(script_dir,BUILDS_FOLDER_NAME,SCALERS_FILE_NAME)
+        # path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{SCALERS_FILE_NAME}"
         self.scalers = joblib.load(path)
         
     def __encode_cat_features(self, cat_cols: list = CAT_COLS) -> None:
@@ -57,11 +60,6 @@ class Model:
         self.__scale_num_features()        
             
     def predict(self, input: Input) -> np.ndarray:
-        # self._prediction_inp = input.get_input_item()
-        # self._prediction_inp = pd.concat([input.get_input_item(), self.sampleX], axis=0)
-        # self._prediction_inp = self._prediction_inp[:1]
-        # self.__encode_cat_features()
-        # self.__scale_num_features()
         self.preprocess_input(input=input)
         prediction = self.model.predict(self._prediction_inp)
         return prediction
@@ -78,7 +76,8 @@ class EnsembleModelCollection:
     def __init__(self, models: dict):
         self.models_dict: Dict[str,Model] = {}
         self.__load_models(models=models)
-        encoder_path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{ENCODERS_FILE_NAME}"
+        encoder_path = os.path.join(script_dir, BUILDS_FOLDER_NAME, ENCODERS_FILE_NAME)
+        # encoder_path = f"{script_dir}/{BUILDS_FOLDER_NAME}/{ENCODERS_FILE_NAME}"
         self.encoder: Dict[str,LabelEncoder] = joblib.load(encoder_path)
     
     def __load_models(self, models: dict) -> None:
@@ -100,8 +99,7 @@ class EnsembleModelCollection:
     def avg_proba(self, probabilities: dict) -> float:
         sum: int = 0
         n: int = 0
-        for name, probability in probabilities.items():
-            # if type(probability) != None:
+        for _, probability in probabilities.items():
             try:
                 sum += round(probability[0][1]*100, 2)
                 n += 1
@@ -114,15 +112,8 @@ class EnsembleModelCollection:
         all_predictions_proba :Dict[str] = {}
         for name, model in self.models_dict.items():
             all_predictions[name] = model.predict(input=input)
-            # if name != 'ANN' or name != 'LinearSVC' or name != 'DecisionTree':
             all_predictions_proba[name] = model.predict_proba(input=input)
         final_prediction = self.most_freq_class(all_predictions)
         final_prediction = self.encoder[TARGET_CLASS].inverse_transform(final_prediction)
         return {'final_prediction': final_prediction, 'prediction_proba': self.avg_proba(probabilities=all_predictions_proba)}
-
-if __name__ == "__main__":
-    all_models: dict = {**KERAS_MODELS_FILE_NAMES, **SKLEARN_MODELS_FILE_NAMES}
-    EnsembleModel = EnsembleModelCollection(models=all_models)
-    input = Input(bmi=44.56,ment_health=5,phys_health=8,sleep_time=6,age_cat='55-59',alcohol_drink='Yes',asthma='No',diabetic='No',diff_walk='No',gen_health='Good',kid_dis='No',phys_act='No',race='Other',sex='Male',skin_canc='No',smoking='Yes',stroke='No')
-    print(EnsembleModel.predict(input=input))
     

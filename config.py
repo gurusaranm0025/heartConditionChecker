@@ -4,9 +4,15 @@ NUM_COLS: list = ['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']
 
 TARGET_CLASS: str = "HeartDisease"
 
-DATASET_PATH_FOR_LINUX: str = "./dataset/2020/heart_2020_cleaned.csv"
+DATASET_NAME = "heart_2020_cleaned.csv"
 
-DATASET_PATH_FOR_WINDOWS: str = ".\\dataset\\2020\\heart_2020_cleaned.csv"
+DATASET_MAIN_FOLDER = "dataset"
+
+DATASET_SUB_FOLDER = "2020"
+
+# DATASET_PATH_FOR_LINUX: str = "./dataset/2020/heart_2020_cleaned.csv"
+
+# DATASET_PATH_FOR_WINDOWS: str = ".\\dataset\\2020\\heart_2020_cleaned.csv"
 
 CLASS_WEIGHTS: dict = {0:1, 1:5}
 
